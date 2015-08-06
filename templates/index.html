@@ -13,10 +13,15 @@
             <li class='dropdown' id='usertap'>
                 <a href='##' class='dropdown-toggle' data-toggle='dropdown' id='users'>user<span class='caret'></span></a>
                 <ul class='dropdown-menu' id='userelem'>
-                    <!--for js to render  TODO-->
+                    <!--for js to render user list  TODO-->
                 </ul>
             </li>
-            <li><a href='##'>group</a></li>
+            <li class='dropdown' id='grouptap'>
+                <a href='##' class='dropdown-toggle' data-toggle='dropdown' id='groups'>group<span class='caret'></span></a>
+                <ul class='dropdown-menu' id='groupelem'>
+                    <!--for js to render group list TODO-->
+                </ul>
+            </li>
 
         </ul>
     </div>
@@ -27,6 +32,10 @@
     <div class='panel panel-body'> 
         <input type='text' id='time' name='time' class='form-control' placeholder='Time: 0s'/>  
         <button type="button" id='submit' name='submit' class='btn btn-default'>confirm</button>
+    </div>
+    <div class='text-info' id='resultdiv'>
+        <h3 class='text-primary'>Result:</h3>
+        <p id='result'></p>
     </div>
     <div class='panel panel-footer'>
         <h3>Task List:</h3>

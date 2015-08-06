@@ -7,6 +7,7 @@ from setting import *
 from model import *
 import sys
 import json
+import subprocess
 
 from tornado.options import define, options
 define('port', default=8000, help='run on the port', type=int)
@@ -14,7 +15,7 @@ define('port', default=8000, help='run on the port', type=int)
 #define some handlers here
 
 class IndexHandler(tornado.web.RequestHandler):
-    def get(self):
+    def get(self, index):
         self.render('index.html')
 
 class CommandHandler(tornado.web.RequestHandler):
@@ -44,16 +45,24 @@ class UserListHandler(tornado.web.RequestHandler):
         self.write(user.get_message())
 
 class UserDetailHandler(tornado.web.RequestHandler):
-    def __init__(self, application, request, index, **kwargs):
+    def __init__(self, application, request, **kwargs):
         tornado.web.RequestHandler.__init__(self, application, request, **kwargs)
-        self.user = User(index)
-        if index not in self.user.get_users():
-            raise NameError   #TODO for UserError
 
     def get(self, index):
-        self.write('user: '+index)
+        self.user = User(index)
+        if index not in self.user.get_users():
+            raise NameError    #TODO
+
+    def post(self, index):
+        self.user = User(index)
+        if index not in self.user.get_users():
+            raise NameError      #TODO
+        password = self.get_argument('password', '')
+        result = self.user.login(password)
+        self.write(result)
 
     def put(self, index):
+        self.user = User(index)
         name = self.get_argument('name')
         root_dir = self.get_argument('root_dir', '')
         group = self.get_argument('group', '')
@@ -86,16 +95,24 @@ class GroupListHandler(tornado.web.RequestHandler):
         self.write(group.get_message())
 
 class GroupDetailHandler(tornado.web.RequestHandler):
-    def __init__(self, application, request, index, **kwargs):
+    def __init__(self, application, request, **kwargs):
         tornado.web.RequestHandler.__init__(self, application, request, **kwargs)
-        self.group = Group(index)
-        if index not in self.group.get_groups():
-            raise NameError    #TODO   for GroupError
 
     def get(self, index):
-        self.write(index)
+        user = User(index)
+        child = pexpect.spawn('groups')
+        child.expect('.*')
+        result = child.after
+        self.write(result)
+
+    def post(self, index):
+        group = Group(index)
+        password = self.get_argument('password', '')
+        reuslt = group.login(password)
+        self.write(result)
 
     def put(self, index):
+        self.group = Group(index)
         group = self.get_argument('group', '')
         password = self.get_argument('password', '')
         self.group.update_group(group)
@@ -105,6 +122,7 @@ class GroupDetailHandler(tornado.web.RequestHandler):
         self.write(self.group.get_message())
 
     def delete(self, index):
+        self.group = Group(index)
         self.group.delete_group()
         self.write(self.group.get_message())
 
@@ -114,14 +132,14 @@ class TaskListHandler(tornado.web.RequestHandler):
         datas = []
         for task in tasks:
             data = {
-                'data':{'cmd':task.command, 'user':task.user, 'time': task.time},
+                'data':{'cmd':task.command.get_command(), 'user':task.user, 'time': task.time, 'type': task.command.cmd_type},
                 'message': task.command.message
             }
             datas.append(data)
         self.write(json.dumps(datas))
 
     def post(self):
-        command = self.get_argument('command')
+        command = self.get_argument('text')
         user = self.get_argument('user', 'root')
         time = self.get_argument('time', 0)
         task = Task(command, user, time)
@@ -134,12 +152,12 @@ if __name__ == '__main__':
     tornado.options.parse_command_line()
     app = tornado.web.Application(
         handlers=[
-            (r'^/webshell/$', IndexHandler),
+            (r'^/webshell/(\w+)/$', IndexHandler),
             (r'^/command/$', CommandHandler),
             (r'^/user/$', UserListHandler),
             (r'^/user/(.+)/$', UserDetailHandler),
             (r'^/group/$', GroupListHandler),
-            (r'^/group/(.+)/$', GroupDetailHandler),
+            (r'^/group/(\w+)/$', GroupDetailHandler),
             (r'^/task/$', TaskListHandler),
         ],
         template_path=TEMPLATES_DIR,

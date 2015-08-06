@@ -70,6 +70,17 @@ class User(object):
         data.append('root')
         data.append('xukang')
         return data
+    def login(self, password):
+        user = self.get_name()
+        child = pexpect.spawn('su '+user)
+        child.expect('word:')
+        if child.after == '':
+            return 'true'
+        child.sendline(password)
+        child.expect(user+'@xukamg:')
+        if child.after != '':
+            return 'true'
+        return 'false'
 
     def create_user(self):
         self.command = []
@@ -141,7 +152,25 @@ class Group(object):
         groups = []
         for group in result:
             groups.append(group.split(':')[0])
-        return groups
+        lists = groups[78::]
+        lists.pop(2)
+        lists.append('xukang')
+        lists.append('root')
+        return lists
+
+    def login(self, password):
+        group = self.get_group()
+        child = pexpect.spawn('newgrp '+group)
+        child.expect('word:')
+        if child.after == '':
+            return 'true'
+        else:
+            child.sendline(password)
+            child.expect('word:')
+            if child.after != '':
+                return 'false'
+            else:
+                return 'true'
 
     def get_group(self, new_group=''):
         if(new_group):
@@ -212,13 +241,14 @@ class Task(object):
         
 
 class Command(object):
-    
+    message = '' 
     def __init__(self, text='', *inputs):
         self.command = []
         self.inputs = []
         self.command.append(text)
         self.inputs = inputs
         self.cmd_type = 'stdout'
+        self.message = ''
 
     def __str__(self):
         return self.get_command()
